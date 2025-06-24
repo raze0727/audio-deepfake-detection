@@ -30,7 +30,7 @@ async function main() {
             message: chalk.magenta('Insert audio file name:'),
           },
         ]);
-        const { avgReal, avgFake } = await predictAudio(audioFileName.option);
+        const { avgReal, avgFake } = await predictAudio(`validation/real/${audioFileName.option}`);
 
         console.log(
           chalk.magenta(
