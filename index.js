@@ -1,19 +1,13 @@
 const { default: chalk } = require('chalk');
-const {
-  mainPanel,
-  datasetTypePanel,
-  pause,
-  trainModelPanel,
-} = require('./module/cli');
-const {
-  convertAudiosToWAVs,
-  convertWAVsToMFCCs,
-  clearFolder,
-} = require('./module');
+const { mainPanel, datasetTypePanel, pause, trainModelPanel } = require('./module/cli');
+const { convertAudiosToWAVs, convertWAVsToMFCCs, clearFolder } = require('./module');
 const { loadDataset, trainModel, predictAudio } = require('./module/model');
 const { glob } = require('glob');
 const { default: inquirer } = require('inquirer');
-
+const mic = require('mic');
+const config = require('./config');
+const { WriteStream } = require('fs');
+const { sleep } = require('./module/misc');
 async function main() {
   while (true) {
     console.clear();
@@ -23,27 +17,32 @@ async function main() {
 
     switch (mainPanelOption) {
       case 'predict_audio':
-        const audioFileName = await inquirer.prompt([
+        const micInstance = mic({
+          rate: `${config.audio.audioSampleRate}`,
+          channel: '1',
+          fileType: 'wav',
+        });
+
+        const micInputStream = micInstance.getAudioStream();
+        const outputFileStream = WriteStream('audio.wav');
+        micInputStream.pipe(outputFileStream);
+        micInstance.start();
+        await inquirer.prompt([
           {
             type: 'input',
             name: 'option',
-            message: chalk.magenta('Insert audio file name:'),
+            message: chalk.magenta('Press enter to stop recording.'),
           },
         ]);
-        const { avgReal, avgFake } = await predictAudio(`validation/real/${audioFileName.option}`);
 
+        micInstance.stop();
+        const { avgReal, avgFake } = await predictAudio(`audio.wav`);
         console.log(
-          chalk.magenta(
-            `Final averaged prediction | Real: ${avgReal.toFixed(
-              3
-            )}, Fake: ${avgFake.toFixed(3)}`
-          )
+          chalk.magenta(`Final averaged prediction | Real: ${avgReal.toFixed(3)}, Fake: ${avgFake.toFixed(3)}`)
         );
-        console.log(
-          chalk.magenta(`Final Result: ${avgReal > avgFake ? 'REAL' : 'FAKE'}`)
-        );
-
+        console.log(chalk.magenta(`Final Result: ${avgReal > avgFake ? 'REAL' : 'FAKE'}`));
         await pause();
+        await clearFolder('input');
         await clearFolder('temp');
         break;
       case 'train_model':
