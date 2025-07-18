@@ -2,11 +2,12 @@
 ## Problem Statement 1: Deepfake Audio Detection
 ### Instructions
 1. Download the repository
-2. Download dependencies
+2. Download (nodeJS 20.19.4)[https://nodejs.org/en/blog/release/v20.19.4]
+3. Download dependencies
 ```sh
 npm i
 ```
-3. Running the programs
+4. Running the programs
 ```sh
-npm start
+npm run start
 ```
