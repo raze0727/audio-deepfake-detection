@@ -11,7 +11,8 @@ async function processRawAudio(
   outputFileName,
   audioChunkDuration
 ) {
-  const cmd = `ffmpeg -y -i '${audioFilePath}' -ac 1 -ar ${config.audioSampleRate} -f segment -segment_time ${audioChunkDuration} -c:a pcm_s16le '${config.tempFolder}/${outputFileName}_%03d.wav'`;
+  const cmd = `ffmpeg -y -i "${audioFilePath}" -ac 1 -ar ${config.audioSampleRate} -f segment -segment_time ${audioChunkDuration} -c:a pcm_s16le "${config.tempFolder}/${outputFileName}_%03d.wav"`;
+
   try {
     await execPromise(cmd);
   } catch (e) {}
