@@ -18,6 +18,7 @@ async function main() {
     switch (mainPanelOption) {
       case 'predict_audio':
         if (!existsSync('input')) mkdirSync('input');
+        if (!existsSync('temp')) mkdirSync('temp');
         const ffmpegArgs = [
           '-f',
           'dshow',
