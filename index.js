@@ -4,10 +4,10 @@ const { convertAudiosToWAVs, convertWAVsToMFCCs, clearFolder } = require('./modu
 const { loadDataset, trainModel, predictAudio } = require('./module/model');
 const { glob } = require('glob');
 const { default: inquirer } = require('inquirer');
-const mic = require('mic');
 const config = require('./config');
-const { WriteStream } = require('fs');
-const { sleep } = require('./module/misc');
+const { createWriteStream, existsSync, mkdirSync } = require('fs');
+const ffmpeg = require('fluent-ffmpeg');
+
 async function main() {
   while (true) {
     console.clear();
@@ -17,16 +17,15 @@ async function main() {
 
     switch (mainPanelOption) {
       case 'predict_audio':
-        const micInstance = mic({
-          rate: `${config.audio.audioSampleRate}`,
-          channel: '1',
-          fileType: 'wav',
-        });
-
-        const micInputStream = micInstance.getAudioStream();
-        const outputFileStream = WriteStream('audio.wav');
-        micInputStream.pipe(outputFileStream);
-        micInstance.start();
+        if (!existsSync('input')) mkdirSync('input');
+        const ff = ffmpeg()
+          .input('audio="Microphone Array (2- Realtek(R) Audio)"')
+          .inputFormat('dshow')
+          .audioChannels(1)
+          .audioFrequency(config.audio.audioSampleRate)
+          .audioCodec('pcm_s16le')
+          .format('wav')
+          .save('input/audio.wav');
         await inquirer.prompt([
           {
             type: 'input',
@@ -34,15 +33,15 @@ async function main() {
             message: chalk.magenta('Press enter to stop recording.'),
           },
         ]);
+        ff.kill('SIGINT');
 
-        micInstance.stop();
-        const { avgReal, avgFake } = await predictAudio(`audio.wav`);
+        const { avgReal, avgFake } = await predictAudio(`input/audio.wav`);
         console.log(
           chalk.magenta(`Final averaged prediction | Real: ${avgReal.toFixed(3)}, Fake: ${avgFake.toFixed(3)}`)
         );
         console.log(chalk.magenta(`Final Result: ${avgReal > avgFake ? 'REAL' : 'FAKE'}`));
         await pause();
-        await clearFolder('input');
+        //await clearFolder('input');
         await clearFolder('temp');
         break;
       case 'train_model':
