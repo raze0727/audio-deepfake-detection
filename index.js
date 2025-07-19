@@ -5,7 +5,7 @@ const { loadDataset, trainModel, predictAudio } = require('./module/model');
 const { glob } = require('glob');
 const { default: inquirer } = require('inquirer');
 const config = require('./config');
-const { createWriteStream, existsSync, mkdirSync } = require('fs');
+const { existsSync, mkdirSync } = require('fs');
 const { spawn } = require('child_process');
 
 async function main() {
@@ -32,7 +32,9 @@ async function main() {
           'input/audio.wav',
         ];
 
-        const ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
+        const ffmpegProcess = spawn('ffmpeg', ffmpegArgs, {
+          stdio: 'inherit',
+        });
         await inquirer.prompt([
           {
             type: 'input',
@@ -40,8 +42,14 @@ async function main() {
             message: chalk.magenta('Press enter to stop recording.'),
           },
         ]);
-        ffmpegProcess.kill('SIGINT'); // Send Ctrl+C
+        ffmpegProcess.kill('SIGINT');
         await new Promise((resolve) => ffmpegProcess.on('close', resolve));
+
+        console.log('Stopping recording...');
+        if (!existsSync('input/audio.wav')) {
+          console.log(chalk.red('Recording failed. input/audio.wav was not created.'));
+          return;
+        }
 
         const { avgReal, avgFake } = await predictAudio(`input/audio.wav`);
         console.log(
