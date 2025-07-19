@@ -40,7 +40,8 @@ async function main() {
             message: chalk.magenta('Press enter to stop recording.'),
           },
         ]);
-        await ffmpegProcess.kill('SIGINT');
+        ffmpegProcess.kill('SIGINT'); // Send Ctrl+C
+        await new Promise((resolve) => ffmpegProcess.on('close', resolve));
 
         const { avgReal, avgFake } = await predictAudio(`input/audio.wav`);
         console.log(
