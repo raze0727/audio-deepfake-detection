@@ -6,9 +6,7 @@ const { glob } = require('glob');
 const { default: inquirer } = require('inquirer');
 const config = require('./config');
 const { createWriteStream, existsSync, mkdirSync } = require('fs');
-const { exec } = require('child_process');
-const util = require('util');
-const execPromise = util.promisify(exec);
+const { spawn } = require('child_process');
 
 async function main() {
   while (true) {
@@ -20,7 +18,23 @@ async function main() {
     switch (mainPanelOption) {
       case 'predict_audio':
         if (!existsSync('input')) mkdirSync('input');
-        const execute = exec(`ffmpeg -f dshow -i audio="Microphone Array (2- Realtek(R) Audio)" input/audio.wav`);
+        const ffmpegArgs = [
+          '-f',
+          'dshow',
+          '-i',
+          'audio=Microphone Array (2- Realtek(R) Audio)',
+          '-ac',
+          '1',
+          '-ar',
+          config.audio.audioSampleRate.toString(),
+          '-acodec',
+          'pcm_s16le',
+          'input/audio.wav',
+        ];
+
+        const ffmpegProcess = spawn('ffmpeg', ffmpegArgs, {
+          stdio: 'inherit',
+        });
         await inquirer.prompt([
           {
             type: 'input',
@@ -28,14 +42,14 @@ async function main() {
             message: chalk.magenta('Press enter to stop recording.'),
           },
         ]);
-        await execute.kill();
+        ffmpegProcess.kill('SIGINT');
         const { avgReal, avgFake } = await predictAudio(`input/audio.wav`);
         console.log(
           chalk.magenta(`Final averaged prediction | Real: ${avgReal.toFixed(3)}, Fake: ${avgFake.toFixed(3)}`)
         );
         console.log(chalk.magenta(`Final Result: ${avgReal > avgFake ? 'REAL' : 'FAKE'}`));
         await pause();
-        //await clearFolder('input');
+        await clearFolder('input');
         await clearFolder('temp');
         break;
       case 'train_model':
