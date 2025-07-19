@@ -32,9 +32,7 @@ async function main() {
           'input/audio.wav',
         ];
 
-        const ffmpegProcess = spawn('ffmpeg', ffmpegArgs, {
-          stdio: 'inherit',
-        });
+        const ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
         await inquirer.prompt([
           {
             type: 'input',
@@ -42,7 +40,8 @@ async function main() {
             message: chalk.magenta('Press enter to stop recording.'),
           },
         ]);
-        ffmpegProcess.kill('SIGINT');
+        await ffmpegProcess.kill('SIGINT');
+
         const { avgReal, avgFake } = await predictAudio(`input/audio.wav`);
         console.log(
           chalk.magenta(`Final averaged prediction | Real: ${avgReal.toFixed(3)}, Fake: ${avgFake.toFixed(3)}`)
