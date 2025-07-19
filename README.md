@@ -9,7 +9,7 @@
 ```sh
 npm i
 ```
-65. Running the programs
+6. Running the programs
 ```sh
 npm run start
 ```
